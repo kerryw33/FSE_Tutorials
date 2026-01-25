@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+env/
+
+# Data & DB
+*.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Charts
+*.png
