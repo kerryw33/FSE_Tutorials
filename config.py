@@ -8,6 +8,7 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
     CURRENCY_SYMBOL = os.getenv("CURRENCY_SYMBOL", "R")
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///finance.db")
 
     @classmethod
     def get_currency_symbol(cls : type) -> str:
@@ -16,3 +17,7 @@ class Config:
     @classmethod
     def get_secret_key(cls : type) -> str:
         return cls.SECRET_KEY
+    
+    @classmethod
+    def get_database_url(cls : type) -> str:
+        return cls.DATABASE_URL

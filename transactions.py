@@ -1,42 +1,75 @@
 from decimal import Decimal, InvalidOperation
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, String
+from sqlalchemy.orm import declarative_base, relationship
+
 from config import Config
 
 
 CURRENCY_SYMBOL = Config.get_currency_symbol()
+Base = declarative_base()
 
+class Category(Base):
+    __tablename__ = "categories"
 
-class Transaction:
-    def __init__(self, date, description, amount, category):
-        self.date = date
-        self.description = description
-        try:
-            self.amount = Decimal(amount)
-        except InvalidOperation:
-            raise ValueError(f"Invalid amount: {amount}")
-        self.category = category
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True, nullable=False)
+    transactions = relationship(
+        "Transaction",
+        back_populates="category_ref",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
-        return f"Transaction(date='{self.date}', description='{self.description}', amount={format_currency(self.amount)}, category='{self.category}')"
+        return f"Category(id={self.id}, name='{self.name}')"
 
 
-def format_currency(amount=Decimal(0)) -> str:
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(String(32), nullable=False)
+    description = Column(String(255), nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
+    category = Column(String(100), nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    category_ref = relationship("Category", back_populates="transactions")
+
+    def __init__(self, **kwargs):
+        if 'amount' in kwargs:
+            try:
+                kwargs['amount'] = Decimal(kwargs['amount'])
+            except (InvalidOperation, ValueError) as e:
+                raise ValueError("Amount must be a valid decimal number") from e
+        super().__init__(**kwargs)
+
+    def __repr__(self):
+        amt = Decimal(str(self.amount)) if self.amount is not None else Decimal('0.00')
+        return (
+            "Transaction("
+            f"id={self.id}, date='{self.date}', description='{self.description}', "
+            f"amount={format_currency(amt)}, category='{self.category}', "
+            f"category_id={self.category_id})"
+        )
+
+
+def format_currency(amount: Decimal) -> str:
     """Formats a decimal amount as a Rand (R) string."""
     return f"{CURRENCY_SYMBOL} {amount:.2f}"
 
 
 def calculate_total_expenses(transactions: list[Transaction]) -> Decimal:
     """Calculates the total expenses from a list of transactions."""
-    return sum((t.amount for t in transactions if t.amount < 0), Decimal(0))
+    return sum((Decimal(str(t.amount)) for t in transactions if Decimal(str(t.amount)) < 0), Decimal(0))
 
 
 def calculate_total_income(transactions: list[Transaction]) -> Decimal:
     """Calculates the total income from a list of transactions."""
-    return sum((t.amount for t in transactions if t.amount > 0), Decimal(0))
+    return sum((Decimal(str(t.amount)) for t in transactions if Decimal(str(t.amount)) > 0), Decimal(0))
 
 
 def calculate_balance(transactions: list[Transaction]) -> Decimal:
     """Calculates the net balance from a list of transactions."""
-    return sum((t.amount for t in transactions), Decimal(0))
+    return sum((Decimal(str(t.amount)) for t in transactions), Decimal(0))
 
 
 def check_budget_limit(transactions: list[Transaction], limit: Decimal) -> bool:
