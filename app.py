@@ -30,9 +30,10 @@ def main():
 
     finally:
         session.close()
-        display_transactions_by_category("Income")
-        display_transactions_by_category("Expense")
+        display_transactions_by_category("Job")
+        display_transactions_by_category("Groceries")
         generate_financial_charts()
+        print("\nText-based Financial Report:\n")
         print(generate_text_report())
 
 
