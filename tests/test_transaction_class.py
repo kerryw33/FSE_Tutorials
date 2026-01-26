@@ -51,22 +51,27 @@ def test_calculate_total_income(sample_transactions):
 def test_calculate_balance(sample_transactions):
     assert calculate_balance(sample_transactions) == Decimal('6749.50')
 
-#NOTE This is an example of a test, you should add more tests to cover different scenarios
 def test_empty_transactions():
     empty_list = []
     assert calculate_total_expenses(empty_list) == Decimal('0')
     assert calculate_total_income(empty_list) == Decimal('0')
     assert calculate_balance(empty_list) == Decimal('0')
-    assert check_financial_health(empty_list) == "Overspending"  # Since income is 0
+    assert check_financial_health(empty_list) == "No transactions recorded"  # Since income is 0
 
-#TODO Complete this test
 def test_only_expenses(expenses_only_transactions):
-    pass
+    assert calculate_total_expenses(expenses_only_transactions) == Decimal('-1000.00')
+    assert calculate_total_income(expenses_only_transactions) == Decimal('0')
+    assert calculate_balance(expenses_only_transactions) == Decimal('-1000.00')
+    assert check_financial_health(expenses_only_transactions) == "Overspending"
 
-#TODO Complete this test
 def test_only_income(income_only_transactions):
-    pass
+    assert calculate_total_expenses(income_only_transactions) == Decimal('0')
+    assert calculate_total_income(income_only_transactions) == Decimal('3500.00')
+    assert calculate_balance(income_only_transactions) == Decimal('3500.00')
+    assert check_financial_health(income_only_transactions) == "No expenses recorded"
 
-#TODO Complete this test
 def test_mixed_transactions(sample_transactions):
-    pass
+    assert calculate_total_expenses(sample_transactions) == Decimal('-4750.50')
+    assert calculate_total_income(sample_transactions) == Decimal('11500.00')
+    assert calculate_balance(sample_transactions) == Decimal('6749.50')
+    assert check_financial_health(sample_transactions) == "Saving well"
