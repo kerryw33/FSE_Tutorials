@@ -1,6 +1,6 @@
 import pytest
 from decimal import Decimal
-from transactions import Transaction, format_currency, calculate_total_expenses, calculate_total_income, calculate_balance
+from transactions import Transaction, format_currency, calculate_total_expenses, calculate_total_income, calculate_balance, check_financial_health
 
 @pytest.fixture
 def sample_transactions():
@@ -10,6 +10,21 @@ def sample_transactions():
         Transaction('2024-01-03', 'Rent', Decimal('-4000.00'), 'Housing'),
         Transaction('2024-01-04', 'Freelance', Decimal('1500.00'), 'Income'),
         Transaction('2024-01-05', 'Dinner', Decimal('-250.50'), 'Food'),
+    ]
+
+
+@pytest.fixture
+def income_only_transactions():
+    return [
+        Transaction('2024-01-01', 'Salary', Decimal('3000.00'), 'Income'),
+        Transaction('2024-01-02', 'Bonus', Decimal('500.00'), 'Income'),
+    ]
+
+@pytest.fixture
+def expenses_only_transactions():
+    return [
+        Transaction('2024-01-01', 'Groceries', Decimal('-200.00'), 'Food'),
+        Transaction('2024-01-02', 'Rent', Decimal('-800.00'), 'Housing'),
     ]
 
 def test_transaction_creation():
@@ -35,3 +50,23 @@ def test_calculate_total_income(sample_transactions):
 
 def test_calculate_balance(sample_transactions):
     assert calculate_balance(sample_transactions) == Decimal('6749.50')
+
+#NOTE This is an example of a test, you should add more tests to cover different scenarios
+def test_empty_transactions():
+    empty_list = []
+    assert calculate_total_expenses(empty_list) == Decimal('0')
+    assert calculate_total_income(empty_list) == Decimal('0')
+    assert calculate_balance(empty_list) == Decimal('0')
+    assert check_financial_health(empty_list) == "Overspending"  # Since income is 0
+
+#TODO Complete this test
+def test_only_expenses(expenses_only_transactions):
+    pass
+
+#TODO Complete this test
+def test_only_income(income_only_transactions):
+    pass
+
+#TODO Complete this test
+def test_mixed_transactions(sample_transactions):
+    pass
