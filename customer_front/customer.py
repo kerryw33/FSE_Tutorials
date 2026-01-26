@@ -19,6 +19,6 @@ def serve_dashboard():
 	return send_from_directory(BASE_DIR, "customer.html")
 
 
-@customer_bp.route("/customer.css")
+@customer_bp.route("/style.css")
 def serve_styles():
 	return send_from_directory(BASE_DIR, "customer.css")

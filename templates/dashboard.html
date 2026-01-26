@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financial Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+</head>
+<body>
+    <div class="container">
+        <header class="hero">
+            <div class="hero__content">
+                <span class="badge">Live Dashboard</span>
+                <h1>Financial Management System</h1>
+                <p class="subtitle">Track, analyze, and optimize your financial health</p>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alerts">
+                    {% for category, message in messages %}
+                        <div class="alert alert--{{ category }}">
+                            <span class="alert__icon">{% if category == 'success' %}✓{% else %}!{% endif %}</span>
+                            <p>{{ message }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Financial Summary Cards -->
+        <section class="metrics">
+            <article class="metric-card">
+                <div class="metric-card__icon">💰</div>
+                <div class="metric-card__content">
+                    <p class="metric-card__label">Daily Burn Rate</p>
+                    <p class="metric-card__value">{{ report['Daily Burn Rate'] }}</p>
+                </div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-card__icon">🍽️</div>
+                <div class="metric-card__content">
+                    <p class="metric-card__label">Dining Out</p>
+                    <p class="metric-card__value">{{ report['Dining Out %'] }}</p>
+                </div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-card__icon">🏠</div>
+                <div class="metric-card__content">
+                    <p class="metric-card__label">Essential Coverage</p>
+                    <p class="metric-card__value">{{ report['Essential Coverage'] }}</p>
+                </div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-card__icon">💎</div>
+                <div class="metric-card__content">
+                    <p class="metric-card__label">Net Savings</p>
+                    <p class="metric-card__value">{{ report['Net Savings'] }}</p>
+                </div>
+            </article>
+            
+            <!-- TODO: Add a new metric card for "Largest Expense" -->
+            <!-- HINT: Use the same structure as above with metric-card class -->
+            <!-- HINT: Choose an appropriate emoji icon (💸, 🔴, or ⚠️ work well) -->
+            <!-- HINT: Display largest_expense.description and largest_expense.amount if largest_expense exists -->
+            <!-- HINT: Format amount as: R {{ "%.2f"|format(largest_expense.amount|abs) }} -->
+            <!-- EXAMPLE STRUCTURE:
+            <article class="metric-card">
+                <div class="metric-card__icon">YOUR_EMOJI_HERE</div>
+                <div class="metric-card__content">
+                    <p class="metric-card__label">Largest Expense</p>
+                    <p class="metric-card__value">
+                        {% if largest_expense %}
+                            YOUR_FORMATTED_AMOUNT_HERE
+                        {% else %}
+                            No expenses yet
+                        {% endif %}
+                    </p>
+                </div>
+            </article>
+            -->
+            
+            <!-- TODO: Add a new metric card for "Average Transaction" -->
+            <!-- HINT: Display avg_transaction formatted as currency: R {{ "%.2f"|format(avg_transaction) }} -->
+            
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <h2 class="section-title">Spending Analysis</h2>
+            <div class="charts-grid">
+                {% if chart_paths.expenses %}
+                    <div class="chart-container">
+                        <h3>Expenses Breakdown</h3>
+                        <img src="{{ chart_paths.expenses }}" alt="Expenses Chart" class="chart-image" />
+                    </div>
+                {% endif %}
+                {% if chart_paths.income %}
+                    <div class="chart-container">
+                        <h3>Income Sources</h3>
+                        <img src="{{ chart_paths.income }}" alt="Income Chart" class="chart-image" />
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Add Transaction Form -->
+        <section class="form-section">
+            <h2 class="section-title">Add New Transaction</h2>
+            <form method="POST" action="{{ url_for('add_transaction') }}" class="transaction-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="datetime-local" id="date" name="date" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" id="description" name="description" placeholder="e.g., Grocery shopping" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="transaction_type">Type</label>
+                        <select id="transaction_type" name="transaction_type" required>
+                            <option value="">Select Type</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount (R)</label>
+                        <input type="number" id="amount" name="amount" step="0.01" placeholder="0.00" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" required>
+                            <option value="">Select Category</option>
+                            <option value="Job">Job</option>
+                            <option value="Freelance">Freelance</option>
+                            <option value="Bonus">Bonus</option>
+                            <option value="Groceries">Groceries</option>
+                            <option value="Housing">Housing</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Dining Out">Dining Out</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Health">Health</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit">Add Transaction</button>
+            </form>
+        </section>
+
+        <!-- Transactions Table -->
+        <section class="table-section">
+            <div class="table-header">
+                <h2 class="section-title">Recent Transactions</h2>
+                <div class="table-actions">
+                    <input type="text" id="searchInput" placeholder="Search transactions..." class="search-input" />
+                    <select id="categoryFilter" class="filter-select">
+                        <option value="">All Categories</option>
+                        <option value="Job">Job</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Bonus">Bonus</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Housing">Housing</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Dining Out">Dining Out</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Health">Health</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsBody">
+                        {% for transaction in transactions %}
+                        <tr class="transaction-row" data-category="{{ transaction.category }}">
+                            <td>{{ transaction.date[:10] }}</td>
+                            <td>{{ transaction.description }}</td>
+                            <td><span class="category-badge">{{ transaction.category }}</span></td>
+                            <td class="amount {% if transaction.amount > 0 %}amount--positive{% else %}amount--negative{% endif %}">
+                                {% if transaction.amount > 0 %}+{% else %}-{% endif %} R {{ "%.2f"|format(transaction.amount|abs) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', filterTable);
+        document.getElementById('categoryFilter').addEventListener('change', filterTable);
+
+        function filterTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const rows = document.querySelectorAll('.transaction-row');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const category = row.dataset.category;
+                
+                const matchesSearch = text.includes(searchTerm);
+                const matchesCategory = !categoryFilter || category === categoryFilter;
+                
+                row.style.display = (matchesSearch && matchesCategory) ? '' : 'none';
+            });
+        }
+
+        // Set default date to now
+        const dateInput = document.getElementById('date');
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        dateInput.value = now.toISOString().slice(0, 16);
+    </script>
+</body>
+</html>

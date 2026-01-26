@@ -90,7 +90,7 @@ def generate_text_report():
     df = create_unified_dataframe()
     # Ensure amount is numeric and date is datetime
     df['amount'] = pd.to_numeric(df['amount'])
-    df['date'] = pd.to_datetime(df['date'])
+    df['date'] = pd.to_datetime(df['date'], format='ISO8601')  # Handle mixed ISO8601 formats
 
     expenses = df[df['amount'] < 0]
     income = df[df['amount'] > 0]
