@@ -15,3 +15,7 @@ env/
 
 # Charts
 *.png
+
+# Celery
+celerybeat-schedule
+celerybeat.pid

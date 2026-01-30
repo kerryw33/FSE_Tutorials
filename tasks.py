@@ -1,0 +1,61 @@
+import os
+from celery import Celery
+from helpers.analysis import generate_financial_charts
+from helpers.config import Config
+import time
+
+# Initialize Celery app
+celery = Celery(
+    "fse_app",
+    broker=Config.get_celery_broker_url(),
+    backend=Config.get_celery_result_backend(),
+)
+
+
+def charts_exist() -> bool:
+    """Check if chart files already exist in the static directory."""
+    STATIC_DIR = Config.get_static_dir()
+    expense_chart = os.path.join(STATIC_DIR, "expenses_pie.png")
+    income_chart = os.path.join(STATIC_DIR, "income_pie.png")
+    return os.path.exists(expense_chart) and os.path.exists(income_chart)
+
+
+# NOTE: We care about this result, we will return it to the caller since it contains paths to the generated charts
+# This is why we use Redis! It acts as our result backend since we put the paths there.
+# Notably, redis is ALSO used as the broker to send tasks to workers.
+@celery.task(name="generate_charts_task")
+def generate_charts_task():
+    """Celery task to generate financial charts asynchronously."""
+    # Check if charts already exist, if so we can skip regeneration
+    if charts_exist():
+        STATIC_DIR = Config.get_static_dir()
+        return {
+            "expenses": os.path.join(STATIC_DIR, "expenses_pie.png"),
+            "income": os.path.join(STATIC_DIR, "income_pie.png"),
+        }
+    charts = generate_financial_charts()
+    # NOTE: Delay added to simulate long processing time for testing
+    time.sleep(5)  # Sleep for 5 seconds
+    web_paths = {}
+    for key, path in charts.items():
+        if path:
+            web_paths[key] = (
+                f"{os.path.join(Config.get_static_dir(), os.path.basename(path))}"
+            )
+    return web_paths
+
+
+# NOTE: The following method is our "fire and forget" task that does not return anything to the caller.
+# It simply deletes old chart files from the static directory.
+@celery.task(name="cleanup_old_charts_task")
+def cleanup_old_charts_task():
+    """Celery task to clean up old chart files from the static directory."""
+    STATIC_DIR = Config.get_static_dir()
+    for filename in os.listdir(STATIC_DIR):
+        if filename.endswith("_pie.png"):
+            file_path = os.path.join(STATIC_DIR, filename)
+            try:
+                os.remove(file_path)
+                print(f"Deleted old chart file: {file_path}")
+            except Exception as e:
+                print(f"Error deleting file {file_path}: {str(e)}")

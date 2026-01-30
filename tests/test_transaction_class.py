@@ -18,7 +18,9 @@ from helpers.transactions import (
 @pytest.fixture()
 def session_factory(monkeypatch):
     """Use an in-memory SQLite database so tests are isolated and fast."""
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     # Patch the shared database module so application code uses this engine/session

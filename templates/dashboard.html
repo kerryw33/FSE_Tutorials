@@ -92,19 +92,22 @@
         <!-- Charts Section -->
         <section class="charts-section">
             <h2 class="section-title">Spending Analysis</h2>
+            <p class="chart-id">Chart ID: {{ chart_task_id }}</p>
             <div class="charts-grid">
-                {% if chart_paths.expenses %}
-                <div class="chart-container">
+                <div class="chart-container" id="expenses-chart">
                     <h3>Expenses Breakdown</h3>
-                    <img src="{{ chart_paths.expenses }}" alt="Expenses Chart" class="chart-image" />
+                    <div class="chart-loading">
+                        <div class="spinner"></div>
+                        <p>Generating chart...</p>
+                    </div>
                 </div>
-                {% endif %}
-                {% if chart_paths.income %}
-                <div class="chart-container">
+                <div class="chart-container" id="income-chart">
                     <h3>Income Sources</h3>
-                    <img src="{{ chart_paths.income }}" alt="Income Chart" class="chart-image" />
+                    <div class="chart-loading">
+                        <div class="spinner"></div>
+                        <p>Generating chart...</p>
+                    </div>
                 </div>
-                {% endif %}
             </div>
         </section>
 
@@ -208,6 +211,67 @@
     </div>
 
     <script>
+        // Chart polling functionality
+        const chartTaskId = "{{ chart_task_id }}";
+        const pollInterval = 1000; // Poll every 1 second
+        const maxRetries = 120; // Max 2 minutes
+        let retryCount = 0;
+
+        function pollChartStatus() {
+            if (retryCount >= maxRetries) {
+                console.error("Chart generation timed out");
+                displayChartError("Chart generation timed out. Please try refreshing the page.");
+                return;
+            }
+
+            fetch(`/api/chart-status/${chartTaskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.state === "success") {
+                        updateCharts(data.chart_paths);
+                    } else if (data.state === "failure") {
+                        displayChartError(`Error generating charts: ${data.error}`);
+                    } else {
+                        // Still pending, retry
+                        retryCount++;
+                        setTimeout(pollChartStatus, pollInterval);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error polling chart status:", error);
+                    retryCount++;
+                    setTimeout(pollChartStatus, pollInterval);
+                });
+        }
+
+        function updateCharts(chartPaths) {
+            const expensesContainer = document.getElementById("expenses-chart");
+            const incomeContainer = document.getElementById("income-chart");
+
+            if (chartPaths.expenses) {
+                expensesContainer.innerHTML = `<h3>Expenses Breakdown</h3><img src="${chartPaths.expenses}" alt="Expenses Chart" class="chart-image" />`;
+            } else {
+                expensesContainer.innerHTML = "<h3>Expenses Breakdown</h3><p>No data available</p>";
+            }
+
+            if (chartPaths.income) {
+                incomeContainer.innerHTML = `<h3>Income Sources</h3><img src="${chartPaths.income}" alt="Income Chart" class="chart-image" />`;
+            } else {
+                incomeContainer.innerHTML = "<h3>Income Sources</h3><p>No data available</p>";
+            }
+        }
+
+        function displayChartError(message) {
+            const expensesContainer = document.getElementById("expenses-chart");
+            const incomeContainer = document.getElementById("income-chart");
+            const errorHTML = `<h3>Error</h3><p>${message}</p>`;
+            expensesContainer.innerHTML = errorHTML;
+            incomeContainer.innerHTML = errorHTML;
+        }
+
+        // Start polling when page loads
+        document.addEventListener("DOMContentLoaded", pollChartStatus);
+
         // Search functionality
         document.getElementById('searchInput').addEventListener('input', filterTable);
         document.getElementById('categoryFilter').addEventListener('change', filterTable);

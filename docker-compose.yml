@@ -46,7 +46,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    command: celery -A app.celery worker --loglevel=info
+    command: celery -A tasks worker --loglevel=info
     restart: unless-stopped
 
   # Celery beat scheduler (for periodic tasks)
@@ -62,7 +62,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    command: celery -A app.celery beat --loglevel=info
+    command: celery -A tasks beat --loglevel=info
     restart: unless-stopped
 
 volumes:
