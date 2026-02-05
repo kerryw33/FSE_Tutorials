@@ -30,7 +30,6 @@ class Transaction(Base):
     date = Column(String(32), nullable=False)
     description = Column(String(255), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
-    category = Column(String(100), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     category_ref = relationship("Category", back_populates="transactions")
 
@@ -47,7 +46,7 @@ class Transaction(Base):
         return (
             "Transaction("
             f"id={self.id}, date='{self.date}', description='{self.description}', "
-            f"amount={format_currency(amt)}, category='{self.category}', "
+            f"amount={format_currency(amt)}, category='{self.category_ref.name if self.category_ref else None}', "
             f"category_id={self.category_id})"
         )
 

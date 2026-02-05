@@ -1,5 +1,3 @@
-import pytest
-
 # Just check if the student has loaded the environment variables correctly
 from helpers.config import Config
 

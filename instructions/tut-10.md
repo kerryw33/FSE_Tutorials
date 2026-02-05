@@ -188,11 +188,11 @@ To run our application with multiple services (Flask app, Celery workers, Redis)
 
 The codebase already includes several Celery tasks and integration with the Flask application. Here's what's been done:
 
-### 1. Celery Configuration (`tasks.py`)
+### Celery Configuration (`tasks.py`)
 
-Three tasks are implemented:
+One task is implemented:
 
-#### a) **Chart Generation Task** (Asynchronous with Result)
+#### **Chart Generation Task** (Asynchronous with Result)
 ```python
 @celery.task(name="generate_charts_task")
 def generate_charts_task():
@@ -204,89 +204,6 @@ def generate_charts_task():
 - **Type**: Async task that returns results (stored in Redis)
 - **Used in**: Dashboard route - triggered when user loads the page
 - **Polling**: Frontend polls `/api/chart-status/<task_id>` to check completion
-
-#### b) **Cleanup Task** (Fire-and-Forget)
-```python
-@celery.task(name="cleanup_old_charts_task")
-def cleanup_old_charts_task():
-    """Deletes old chart files from static directory."""
-```
-
-- **Purpose**: Clean up old chart images to save space
-- **Type**: Fire-and-forget (no result needed)
-- **Used in**: After adding a new transaction
-
-### 2. Flask Integration (`app.py`)
-
-The dashboard route triggers chart generation:
-
-```python
-@app.route("/")
-def dashboard():
-    # Trigger async chart generation
-    task = generate_charts_task.delay()
-    task_id = task.id
-    
-    # Pass task_id to template for polling
-    return render_template("dashboard.html", chart_task_id=task_id, ...)
-```
-
-When adding a transaction:
-
-```python
-@app.route("/transaction/add", methods=["POST"])
-def add_transaction():
-    # ... create transaction ...
-    session.add(new_transaction)
-    session.commit()
-    
-    # Log audit (after commit so transaction.id exists)
-    log_transaction_audit_task.delay(new_transaction.id)
-    
-    # Cleanup old charts
-    cleanup_old_charts_task.delay()
-```
-
-### 3. Chart Status Polling (`app.py`)
-
-```python
-@app.route("/api/chart-status/<task_id>", methods=["GET"])
-def chart_status(task_id):
-    """Polls task status and returns chart paths when ready."""
-    task = generate_charts_task.AsyncResult(task_id)
-    
-    if task.state == "SUCCESS":
-        return jsonify({"state": "success", "chart_paths": task.result})
-    # ... handle other states ...
-```
-
-### 4. Frontend Polling (`templates/dashboard.html`)
-
-JavaScript polls the status endpoint:
-
-```javascript
-function pollChartStatus(taskId) {
-    fetch(`/api/chart-status/${taskId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.state === 'success') {
-                // Update images with generated chart paths
-                updateCharts(data.chart_paths);
-            } else {
-                // Keep polling
-                setTimeout(() => pollChartStatus(taskId), 1000);
-            }
-        });
-}
-```
-
-### 5. Docker Compose Configuration
-
-Services defined in `docker-compose.yml`:
-- **redis**: Message broker and result backend
-- **web**: Flask application
-- **celery_worker**: Background task processor
-- **celery_beat**: Periodic task scheduler
 
 ---
 
@@ -380,6 +297,5 @@ pytest tests/
 3. Verify the application works:
    - Start services: `docker-compose up`
    - Add a transaction via the web interface
-   - Check that `transaction_audit.log` was created with the transaction details
 
 Good luck! 🚀

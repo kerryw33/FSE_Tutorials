@@ -1,138 +1,109 @@
-import os
-from datetime import datetime
 from decimal import Decimal
+import os
+from loguru import logger
+from flask import jsonify, redirect, render_template, request, url_for, flash
 
-from flask import Flask, jsonify, request, render_template, redirect, url_for, flash
-from customer_front.customer import customer_bp
-from data.database import get_session
-from helpers.analysis import generate_financial_charts, generate_text_report
-from helpers.transactions import Transaction
-from helpers.config import Config
-from tasks import (
-    generate_charts_task,
-    cleanup_old_charts_task,
-    log_transaction_audit_task,
+from helpers.analysis import (
+    add_transaction_to_db,
+    generate_financial_charts,
+    generate_text_report,
+    get_category_names,
+    get_transactions_by_category,
+    get_all_transactions,
+    get_largest_expense,
+    get_average_transaction_amount,
 )
+from helpers.config import Config, create_app
 
-app = Flask(__name__)
-app.secret_key = Config.get_secret_key()
-app.register_blueprint(customer_bp, url_prefix="/customer")
+from tasks import generate_charts_task, log_transaction_audit_task
+from helpers.analysis import add_category_to_db
 
+# FLASK APP SETUP
+app = create_app(__name__)
 
-def get_avg_transaction(session):
-    """Calculate average transaction amount."""
-    avg_transaction = (
-        session.query(Transaction)
-        .with_entities((Transaction.amount).label("amount"))
-        .all()
-    )
-    if avg_transaction:
-        return sum([t.amount for t in avg_transaction]) / len(avg_transaction)
-    return 0
-
-
-def get_largest_expense(session):
-    """Get the largest expense transaction."""
-    return (
-        session.query(Transaction)
-        .filter(Transaction.amount < 0)
-        .order_by(Transaction.amount)
-        .first()
-    )
+# FLASK APP
 
 
 @app.route("/")
 def dashboard():
     """Main dashboard with Jinja2 template."""
-    session = get_session()
-    try:
-        # Get all transactions
-        transactions = (
-            session.query(Transaction).order_by(Transaction.date.desc()).all()
-        )
+    # Get all transactions
+    transactions = get_all_transactions()
+    # Get financial report
+    report = generate_text_report()
+    # Generate charts and get paths
+    chart_task = generate_charts_task.delay()  # type: ignore
+    
+    largest_expense = get_largest_expense()
 
-        # Get financial report
-        report = generate_text_report()
-        print(Config.get_static_dir())
+    avg_transaction = get_average_transaction_amount()
 
-        # Trigger async chart generation task
-        task = generate_charts_task.delay()  # type: ignore
-        task_id = task.id
+    category_names = get_category_names()
 
-        largest_expense = get_largest_expense(session)
-        avg_transaction = get_avg_transaction(session)
-
-        return render_template(
-            "dashboard.html",
-            transactions=transactions,
-            report=report,
-            chart_paths={},
-            chart_task_id=task_id,
-            largest_expense=largest_expense,
-            avg_transaction=avg_transaction,
-        )
-    finally:
-        session.close()
+    return render_template(
+        "dashboard.html",
+        transactions=transactions,
+        report=report,
+        chart_paths={},
+        chart_task_id=chart_task.id,  # Pass the Celery task ID to the template
+        largest_expense=largest_expense,
+        avg_transaction=avg_transaction,
+        category_names=category_names,
+    )
 
 
+
+
+#TODO You must call the audit transaction celery logging task here. Check dashboard and tasks.py for more details.
 @app.route("/transaction/add", methods=["POST"])
 def add_transaction():
     """Handle adding a new transaction."""
-    session = get_session()
+    transaction_id = None
     try:
         # Extract form data
         date_str = request.form.get("date")
         description = request.form.get("description")
         amount = Decimal(request.form.get("amount", "0"))
         category = request.form.get("category")
-        transaction_type = request.form.get("transaction_type")
 
-        # Validate required fields
-        if not date_str:
-            raise ValueError("Date is required")
-
-        # Make amount negative if it's an expense
-        if transaction_type == "expense":
-            amount = -abs(amount)
-        else:
-            amount = abs(amount)
-
-        # Parse date - handle both datetime-local format and ISO format with microseconds
-        try:
-            # Try datetime-local format first (YYYY-MM-DDTHH:MM)
-            parsed_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M")
-        except ValueError:
-            try:
-                # Try with seconds (YYYY-MM-DDTHH:MM:SS)
-                parsed_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
-                # Try with microseconds (YYYY-MM-DDTHH:MM:SS.ffffff)
-                parsed_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
-
-        # Create new transaction
-        new_transaction = Transaction(
-            date=parsed_date.isoformat(),
+        transaction_id  = add_transaction_to_db(
+            date=date_str,
             description=description,
             amount=amount,
-            category=category,
+            category_name=category,
         )
-
-        session.add(new_transaction)
-        session.commit()
-
-        # TODO: Add your log transaction audit task here!
-        #log_transaction_audit_task.delay(new_transaction.id)  # type: ignore
-
-        cleanup_old_charts_task.delay()  # type: ignore
-
         flash("Transaction added successfully!", "success")
     except Exception as e:
-        session.rollback()
+        logger.error(f"Error adding transaction: {e}")
         flash(f"Error adding transaction: {str(e)}", "error")
-    finally:
-        session.close()
+    if transaction_id is not None:
+      # log_transaction_audit_task.delay(transaction_id) #type: ignore
+      pass
+
+    
 
     return redirect(url_for("dashboard"))
+
+
+@app.route("/category/add", methods=["POST"])
+def add_category():
+    """Handle adding a new category."""
+    try:
+        category_name = request.form.get("category_name", "").strip()
+
+        if not category_name:
+            flash("Category name cannot be empty", "error")
+        else:
+            add_category_to_db(category_name)
+            flash(f'Category "{category_name}" added successfully!', "success")
+    except Exception as e:
+        logger.error(f"Error adding category: {e}")
+        flash(f"Error adding category: {str(e)}", "error")
+
+    return redirect(url_for("dashboard"))
+
+
+# API ENDPOINTS
 
 
 @app.route("/api/financial_summary", methods=["GET"])
@@ -146,23 +117,14 @@ def api_transactions_by_category():
     """API endpoint to get transactions filtered by category."""
     category = request.args.get("category")
     if not category:
-        return jsonify([])  # Return empty list if no category provided
-    session = get_session()
-    try:
-        transactions = session.query(Transaction).filter_by(category=category).all()
-        result = [
-            {
-                "id": t.id,
-                "date": t.date,
-                "description": t.description,
-                "amount": t.amount,
-                "category": t.category,
-            }
-            for t in transactions
-        ]
-        return jsonify(result)
-    finally:
-        session.close()
+        return jsonify({"error": "Category query parameter is required"}), 400
+    return jsonify(get_transactions_by_category(category))
+
+
+@app.route("/api/category", methods=["GET"])
+def api_categories():
+    """API endpoint to get a list of all categories."""
+    return jsonify(get_category_names())
 
 
 @app.route("/api/financial_charts", methods=["GET"])

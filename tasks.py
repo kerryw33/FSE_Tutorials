@@ -1,10 +1,15 @@
 import os
 from celery import Celery
+from loguru import logger
 from data.database import get_session
 from helpers.transactions import Transaction
 from helpers.analysis import generate_financial_charts
 from helpers.config import Config
 import time
+
+# Configure logger for Celery workers to write to the same log file as Flask app
+logger.remove()
+logger.add("logs/app.log", format="{message}")
 
 # Initialize Celery app
 celery = Celery(
@@ -47,21 +52,6 @@ def generate_charts_task():
     return web_paths
 
 
-# NOTE: The following method is our "fire and forget" task that does not return anything to the caller.
-# It simply deletes old chart files from the static directory.
-@celery.task(name="cleanup_old_charts_task")
-def cleanup_old_charts_task():
-    """Celery task to clean up old chart files from the static directory."""
-    STATIC_DIR = Config.get_static_dir()
-    for filename in os.listdir(STATIC_DIR):
-        if filename.endswith("_pie.png"):
-            file_path = os.path.join(STATIC_DIR, filename)
-            try:
-                os.remove(file_path)
-                print(f"Deleted old chart file: {file_path}")
-            except Exception as e:
-                print(f"Error deleting file {file_path}: {str(e)}")
-
 
 # TODO: Implement the function below to log a transaction
 # Remember to get the session, query the transaction by ID, and then call the log_transaction_audit helper function
@@ -78,13 +68,4 @@ def log_transaction_audit_task(transaction_id: int):
 
 def log_transaction_audit(transaction: Transaction):
     """Helper function to log transaction audit information."""
-    # Log to a file named 'transaction_audit.log'
-    with open("transaction_audit.log", "a") as log_file:
-        log_entry = (
-            f"Transaction ID: {transaction.id}, "
-            f"Date: {transaction.date}, "
-            f"Description: {transaction.description}, "
-            f"Amount: {transaction.amount}, "
-            f"Category: {transaction.category}\n"
-        )
-        log_file.write(log_entry)
+    logger.info(f"Audit Log - Transaction ID: {transaction.id}, Date: {transaction.date}, Description: {transaction.description}, Amount: {transaction.amount}, Category: {transaction.category_ref.name if transaction.category_ref else 'None'}")
