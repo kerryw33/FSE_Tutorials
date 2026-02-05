@@ -52,9 +52,9 @@ python seed.py
 
 Open `app.py` and finish the marked TODOs. The intent of each helper:
 
-1) `add_expense_category()` – ensure an `Expense` category exists (create it if missing, otherwise reuse it).
+1) `add_entertainment_category()` – ensure an `Entertainment` category exists (create it if missing, otherwise reuse it).
 
-2) `add_expenses()` – insert sample negative transactions (e.g., Groceries, Utilities) under the `Expense` category **only if** no expenses exist yet.
+2) `add_entertainment_expenses()` – insert sample negative expenses (e.g., Groceries, Utilities) under the `Entertainment` category.
 
 3) `display_transactions_by_category(category_name)` – query and print all transactions for a given category name. Use the ORM query API (no raw SQL needed).
 
