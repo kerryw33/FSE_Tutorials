@@ -189,10 +189,10 @@ git push origin tut-9
 
 Our workflow is optimized for free GitHub Actions usage:
 
-- ✅ **Caching**: `cache: 'pip'` stores dependencies between runs (saves 20-30 seconds).
-- ✅ **Targeted triggers**: Only runs on relevant branches (saves Actions minutes).
-- ✅ **Single job**: One job is faster and uses fewer minutes than multiple jobs.
-- ✅ **Ubuntu runner**: Linux runners are fastest and cheapest.
+- **Caching**: `cache: 'pip'` stores dependencies between runs (saves 20-30 seconds).
+- **Targeted triggers**: Only runs on relevant branches (saves Actions minutes).
+- **Single job**: One job is faster and uses fewer minutes than multiple jobs.
+- **Ubuntu runner**: Linux runners are fastest and cheapest.
 
 **GitHub Free Tier**: 2,000 Actions minutes/month for private repos, unlimited for public repos.
 
@@ -277,11 +277,11 @@ You now have a professional CI pipeline that automatically tests your code on ev
 ```
 
 ### What You Built
-- ✅ Automated test execution on every push
-- ✅ Multi-branch CI support (main + tutorial branches)
-- ✅ Pull request validation
-- ✅ Fast builds with dependency caching
-- ✅ Clear test output and logs
-- ✅ Professional development workflow
+- Automated test execution on every push
+- Multi-branch CI support (main + tutorial branches)
+- Pull request validation
+- Fast builds with dependency caching
+- Clear test output and logs
+- Professional development workflow
 
 Congratulations! You've completed the tutorial and now have a production-ready financial application with automated testing!
