@@ -4,8 +4,7 @@ from typing import List, Tuple
 
 # Constants
 CURRENCY_SYMBOL = "R"
-# TODO: Remove the TRANSACTION_TYPES constant below - we are not using it in the Transaction class
-TRANSACTION_TYPES = ["income", "expense"]
+
 
 
 class Transaction:
@@ -37,7 +36,13 @@ def calculate_total_expenses(transactions: List[Transaction]) -> Decimal:
         >>> calculate_total_expenses(transactions)
         Decimal('-2000.00')
     """
-    return Decimal(0)
+    expenses = Decimal(0)
+    for t in transactions:
+        if(t.amount < 0):
+            expenses += t.amount
+    return expenses
+
+
 
 
 # TODO: Implement this function to sum all transactions with positive amounts
@@ -50,7 +55,12 @@ def calculate_total_income(transactions: List[Transaction]) -> Decimal:
     Returns:
         The total income as a Decimal (should be positive).
     """
-    return Decimal(0)
+    incomes = Decimal(0)
+    for t in transactions:
+        if(t.amount > 0):
+            incomes += t.amount
+    return incomes
+
 
 # NOTE: This function is already complete - no changes needed here!
 def format_currency(amount: Decimal) -> str:
@@ -111,14 +121,14 @@ def add_transaction(
 # TODO: Update this function to work with Transaction objects instead of dicts.
 # Change List[dict] to List[Transaction], use dot notation (t.amount), and update docstring.
 # Hint: With Transaction objects, simply sum all amounts (expenses are negative, income is positive)!
-def calculate_balance(transactions: List[dict]) -> Decimal:
+def calculate_balance(transactions: List[Transaction]) -> Decimal:
     """
     Calculate the current balance from a list of transactions.
 
     Income transactions add to the balance; expense transactions subtract.
 
     Args:
-        transactions: A list of transaction dictionaries.
+        transactions: A list of transaction tuples
 
     Returns:
         The calculated balance as a Decimal.
@@ -134,10 +144,10 @@ def calculate_balance(transactions: List[dict]) -> Decimal:
     balance = Decimal(0)
 
     for transaction in transactions:
-        if transaction["type"] == "income":
-            balance += transaction["amount"]
-        elif transaction["type"] == "expense":
-            balance -= transaction["amount"]
+        if transaction.amount>0:
+            balance += transaction.amount
+        elif transaction.amount <0:
+            balance += transaction.amount
 
     return balance
 
