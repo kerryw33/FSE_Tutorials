@@ -100,11 +100,8 @@ def calculate_balance(transactions: List[Transaction]) -> Decimal:
         Decimal('4000')
     """
     balance = Decimal(0)
-
-    for transaction in transactions:
-        if transaction.amount > 0:
-            balance += transaction.amount
-        elif transaction.amount < 0:
-            balance += transaction.amount
+    balance = (calculate_total_expenses(transactions)) + (
+        calculate_total_income(transactions)
+    )
 
     return balance
