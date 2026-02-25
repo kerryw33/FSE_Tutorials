@@ -56,13 +56,21 @@ def check_financial_health(transactions: list[Transaction]) -> str:
         str: A message indicating financial health status, like: "Saving well", or "Overspending".
 
     """
+    # if there are expenses
     total_income = calculate_total_income(transactions)
     total_expenses = abs(calculate_total_expenses(transactions))
-    health = total_income / (total_expenses)
-    if (health >= 1):
-        return "Saving well"
-    else:
-        return "Overspending"
+    try:
+        health = total_income / (total_expenses)
+        if (health >= 1):
+            return "Saving well"
+        else: 
+            return "Overspending"
+    # handles case when there are no expenses
+    except (ZeroDivisionError, InvalidOperation):
+        if total_income>0:
+            return "Saving well"
+        else: 
+            return "No expenses recorded"
 
 #TODO Examine this function, it seems to be causing an error in app.py? (Hint: This function uses other functions defined above, it might be related to them)
 def calculate_financial_summary(transactions: list[Transaction]) -> dict:
