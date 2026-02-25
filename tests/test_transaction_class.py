@@ -63,14 +63,14 @@ def test_empty_transactions():
 def test_only_expenses(expenses_only_transactions):
     assert calculate_total_expenses(expenses_only_transactions) == Decimal('-1000')
     assert calculate_total_income(expenses_only_transactions) == Decimal('0')
-    assert calculate_balance(expenses_only_transactions) == calculate_total_expenses(expenses_only_transactions)
+    assert calculate_balance(expenses_only_transactions) == Decimal('-1000')
     assert check_financial_health(expenses_only_transactions)=="Overspending"
 
 #TODO Complete this test
 def test_only_income(income_only_transactions):
     assert calculate_total_expenses(income_only_transactions) == Decimal('0')
     assert calculate_total_income(income_only_transactions) == Decimal('3500')
-    assert calculate_balance(income_only_transactions) == calculate_total_income(income_only_transactions)
+    assert calculate_balance(income_only_transactions) == Decimal('3500')
     assert check_financial_health(income_only_transactions)=="Saving well"
 
 #TODO Complete this test
