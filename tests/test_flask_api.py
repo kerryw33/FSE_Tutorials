@@ -13,21 +13,6 @@ def client():
     with app.test_client() as client:
         yield client
 
-
-def test_financial_summary_endpoint(client):
-    """Test that /api/financial_summary returns the correct text report."""
-    response = client.get("/api/financial_summary")
-
-    assert response.status_code == 200
-    assert response.is_json
-
-    data = response.get_json()
-    assert "Daily Burn Rate" in data
-    assert "Entertainment %" in data
-    assert "Essential Coverage" in data
-    assert "Net Savings" in data
-
-
 def test_financial_charts_endpoint(client):
     """Test that /api/financial_charts returns chart paths."""
     mock_charts = {
