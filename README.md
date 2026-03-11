@@ -1,3 +1,4 @@
+![Tests](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/tests.yml/badge.svg)
 # ECO5040S - Financial Software Engineering
 Welcome to the repository for ECO5040S - Financial Software Engineering. This course focuses on the principles and practices of software engineering in the context of financial applications.
 

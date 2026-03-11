@@ -179,7 +179,7 @@ To run our application with multiple services (Flask app, Celery workers, Redis)
    ```
 
 6. **Access the Application**:
-   - Open browser to `http://localhost:5000`
+   - Open browser to `http://127.0.0.1:5001`
    - The Flask app will connect to Redis automatically
 
 ---
